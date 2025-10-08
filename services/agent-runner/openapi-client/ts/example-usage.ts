@@ -1,14 +1,20 @@
 import { Configuration, DefaultApi } from "./index";
-
 const config = new Configuration({ basePath: "http://127.0.0.1:8000" });
 const api = new DefaultApi(config);
-
 async function runExample() {
   try {
+    // 1) Crear operación
     const createResp = await (api as any).createOperationOperationsPost({ action: "example_action", payload: "hello" } as any);
     console.log("create ->", JSON.stringify(createResp?.data ?? createResp ?? null, null, 2));
+
+    // 2) Ejecutar la acción con el cuerpo que el endpoint espera (ExecuteRequest)
     const opId = (createResp?.data && ((createResp.data as any).id)) || (createResp?.id) || 12345;
-    const runResp = await (api as any).executeActionV1AgentExecutePost({ operation_id: String(opId) } as any);
+    const executeBody = {
+      action: "example_action",
+      payload: { note: "run for op " + opId },
+      idempotency_key: String(opId) + "-exec"
+    };
+    const runResp = await (api as any).executeActionV1AgentExecutePost(executeBody as any);
     console.log("run ->", JSON.stringify(runResp?.data ?? runResp ?? null, null, 2));
   } catch (err: any) {
     if (err?.response) {
@@ -19,5 +25,4 @@ async function runExample() {
     process.exit(1);
   }
 }
-
 runExample();
