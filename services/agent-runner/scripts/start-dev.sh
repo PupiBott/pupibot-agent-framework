@@ -7,8 +7,11 @@ if [ -f "$(pwd)/.venv/bin/activate" ]; then
   source .venv/bin/activate
 fi
 
+# Asegura que la carpeta agent-runner esté en PYTHONPATH para resolver `src.*`
+export PYTHONPATH="$(pwd)/services/agent-runner:${PYTHONPATH:-}"
+
 # Puerto configurable
 PORT="${PORT:-8000}"
 
-# Arranca uvicorn usando --app-dir para que 'src' sea resolvible
-uvicorn main:app --app-dir "$(pwd)/services/agent-runner/src" --host 127.0.0.1 --port "${PORT}" --reload
+# Arranca uvicorn resolviendo src como paquete raíz del backend
+uvicorn src.main:app --host 127.0.0.1 --port "${PORT}" --reload
