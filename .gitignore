@@ -22,3 +22,5 @@ docker-compose.override.yml
 operations.db
 *.bak
 *.swp
+.openapi-generator/
+openapitools.json
