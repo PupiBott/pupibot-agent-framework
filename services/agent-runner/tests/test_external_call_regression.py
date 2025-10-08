@@ -1,4 +1,5 @@
-import respx
+import pytest
+respx = pytest.importorskip("respx")
 import httpx
 from fastapi.testclient import TestClient
 from src.main import app
