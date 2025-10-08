@@ -1,7 +1,13 @@
+# Dependencias del core del agente
+-r services/agent-core/requirements.txt
+
+# Dependencias del runner
 fastapi
-uvicorn[standard]
-respx==0.22.0
-httpx==0.27.0
+uvicorn
+httpx
+
+# Testing y mocking
 pytest
 pytest-asyncio
-pytest-httpx==0.30.0
+pytest_httpx
+respx

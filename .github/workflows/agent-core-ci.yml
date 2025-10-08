@@ -1,0 +1,39 @@
+name: agent-core-ci
+
+on:
+  pull_request:
+    paths:
+      - 'services/**'
+      - 'requirements-dev.txt'
+      - '.github/workflows/agent-core-ci.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Export PYTHONPATH
+        run: echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
+
+      - name: Debug env
+        run: |
+          python -V
+          which python
+          python -m pip show requests || true
+          python -m pip show fastapi || true
+          python -m pip show respx || true
+          python -m pip show pytest_httpx || true
+          python -m pip list | head -20
+
+      - name: Run tests
+        run: python -m pytest -q services
