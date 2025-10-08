@@ -9,30 +9,39 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --- START CORRECCIÓN CI: INSTALACIÓN DE DEPENDENCIAS Y PYTHON_PATH ---
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
           
       - name: Upgrade pip and install agent-core deps
+        # ¡Este es el paso crítico que instala requests y pytest!
         run: |
           python -m pip install --upgrade pip
-          # Instala las dependencias necesarias: requests, google-genai, pytest
           python -m pip install -r services/agent-core/requirements.txt
         env:
           PIP_CACHE_DIR: ${{ runner.temp }}/pip-cache
 
-      - name: Ensure PYTHONPATH includes repo root
-        # Esto permite que los tests y main.py encuentren los módulos del repo (e.g., services.agent_core.src...)
-        run: echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
-      # --- END CORRECCIÓN CI ---
+      # --- DEBUGGING: Confirma que requests se instaló correctamente ---
+      - name: Debug: show installed packages and python path
+        run: |
+          python -m pip show requests || echo "Error: requests not found after install"
+          python -c "import sys; print('PYTHONPATH:', sys.path[:5])"
+          python -c "import requests; print('requests OK, version:', requests.__version__)"
+      # --- END DEBUGGING ---
 
-      - name: Validate OpenAPI Contract
+      - name: Ensure PYTHONPATH includes repo root
+        # Esto permite que los tests encuentren el código fuente
+        run: echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
+
+      - name: Validate OpenAPI Contract (Requires Node)
+        # Instalamos node para esta herramienta, aunque el código principal es Python
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run OpenAPI Validation
         run: npx -y @apidevtools/swagger-cli validate services/agent-runner/openapi/openapi.json
-      
+
       - name: Run unit tests for agent-core
-        # Ahora el entorno tiene las dependencias y el PYTHONPATH correcto
+        # Este step corre los tests. Si los pasos anteriores funcionaron, este pasará
         run: pytest -q services/agent-core/tests
-        
-      # El smoke test E2E (arrancar uvicorn y .ci/smoke-agent-runner.sh) iría aquí para la prueba completa
