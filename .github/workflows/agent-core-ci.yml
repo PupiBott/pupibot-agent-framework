@@ -18,13 +18,13 @@ jobs:
       - name: Upgrade pip and install agent-core deps
         run: |
           python -m pip install --upgrade pip
-          # Instala las dependencias necesarias para correr el código y los tests (requests, google-genai, pytest)
+          # Instala las dependencias necesarias: requests, google-genai, pytest
           python -m pip install -r services/agent-core/requirements.txt
         env:
           PIP_CACHE_DIR: ${{ runner.temp }}/pip-cache
 
       - name: Ensure PYTHONPATH includes repo root
-        # Esto permite que los módulos dentro de services/agent-core/src se importen correctamente
+        # Esto permite que los tests y main.py encuentren los módulos del repo (e.g., services.agent_core.src...)
         run: echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
       # --- END CORRECCIÓN CI ---
 
@@ -32,10 +32,7 @@ jobs:
         run: npx -y @apidevtools/swagger-cli validate services/agent-runner/openapi/openapi.json
       
       - name: Run unit tests for agent-core
-        # Este step usa el PYTHONPATH que acabamos de exportar y las dependencias instaladas
+        # Ahora el entorno tiene las dependencias y el PYTHONPATH correcto
         run: pytest -q services/agent-core/tests
-
-      # Nota: El smoke test E2E (arrancar uvicorn y .ci/smoke-agent-runner.sh) se añadiría aquí,
-      # pero por ahora nos centramos en que los unit tests funcionen.
-      
-      # Si el test pasa, no se requiere el paso de iniciar uvicorn para este job inicial.
+        
+      # El smoke test E2E (arrancar uvicorn y .ci/smoke-agent-runner.sh) iría aquí para la prueba completa
