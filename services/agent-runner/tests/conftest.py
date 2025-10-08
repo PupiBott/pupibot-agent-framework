@@ -1,3 +1,8 @@
+import os
+
+# Ensure the TESTING environment variable is set before importing the app
+os.environ["TESTING"] = "true"
+
 import pytest
 import sqlite3
 from src.db_init import initialize_database

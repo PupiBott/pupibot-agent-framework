@@ -19,3 +19,4 @@ docker-compose.override.yml
 *.env
 *.log
 *.tmp
+operations.db
