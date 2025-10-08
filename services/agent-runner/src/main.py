@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 # Garantiza que la carpeta services/agent-runner se inserte en sys.path
-# para que las importaciones `from src.*` funcionen cuando se ejecute
+# para que las importaciones `from .*` funcionen cuando se ejecute
 # uvicorn desde la raíz del repo.
 ROOT = Path(__file__).resolve().parents[2]  # -> /.../services/agent-runner
 ROOT_STR = str(ROOT)
@@ -27,7 +27,7 @@ if ROOT_STR not in sys.path:
 print("sys.path:", sys.path)
 
 # Import database initialization
-from src.db_init import initialize_database
+from .db_init import initialize_database
 
 # Determina si estamos en modo testing (controlado por env var)
 IS_TESTING = os.environ.get("TESTING", "false").lower() in ("1", "true", "yes")
