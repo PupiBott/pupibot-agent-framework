@@ -39,8 +39,25 @@ jobs:
       run: |
         python tools/generate_openapi.py
 
-    - name: Upload OpenAPI artifact
+    - name: Download openapi-generator-cli JAR
+      run: |
+        mkdir -p .openapi-generator
+        curl -sSL -o .openapi-generator/openapi-generator-cli.jar \
+          https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/6.6.0/openapi-generator-cli-6.6.0.jar
+
+    - name: Generate TypeScript client
+      run: |
+        java -jar .openapi-generator/openapi-generator-cli.jar generate \
+          -i services/agent-runner/openapi/openapi.json \
+          -g typescript-axios \
+          -o services/agent-runner/openapi-client/ts \
+          --additional-properties=npmName=@pupibot/openapi-client,npmVersion=1.0.0,supportsES6=true,modelPropertyNaming=original \
+          --skip-validate-spec
+
+    - name: Upload OpenAPI and TS client artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: openapi
-        path: services/agent-runner/openapi/openapi.json
+        name: openapi-and-client
+        path: |
+          services/agent-runner/openapi/openapi.json
+          services/agent-runner/openapi-client/ts
