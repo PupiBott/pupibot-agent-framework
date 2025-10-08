@@ -1,33 +1,41 @@
-# Proyecto de Asistente IA Local
+# 🤖 PUPIBOT: Agente Modular de Orquestación y Creación de Contenido (GenAI)
 
-Este proyecto es una base para desarrollar un asistente de inteligencia artificial local. Incluye configuraciones iniciales y una estructura de carpetas organizada para facilitar el desarrollo.
+## 🌟 Visión General
 
-## Instalación de dependencias de desarrollo
+PUPIBOT es un **Framework de Orquestación de Agentes de IA** diseñado para transformar instrucciones en acciones complejas que involucran múltiples servicios. Va más allá de una simple conversación: actúa como un **cerebro central** capaz de controlar microservicios y APIs externas, permitiendo la creación automatizada de activos de alto valor como presentaciones interactivas, documentos y contenido multimedia.
 
-Primero, activa el entorno virtual existente:
+Este proyecto es una **prueba de concepto (PoC)** de arquitectura modular y *serverless* para la nueva era de aplicaciones basadas en *Large Language Models (LLMs)*.
 
-```bash
-source .venv/bin/activate
-```
+## ⚙️ Arquitectura Técnica
 
-Luego, instala las dependencias de desarrollo:
+El proyecto sigue una arquitectura de **Microservicios orquestados en Docker Compose**, lo que garantiza portabilidad y estabilidad.
 
-```bash
-pip install -r requirements-dev.txt
-```
+| Componente | Rol | Tecnología Clave |
+| :--- | :--- | :--- |
+| **`agent-runner` (El Cerebro)** | Núcleo de la aplicación. Recibe peticiones, decide qué servicio llamar (la **orquestación**) y maneja las llamadas a las APIs externas. | FastAPI, Python, **`httpx`** (para llamadas asíncronas) |
+| **`document-service` (Ejemplo)**| Servicio de ejemplo que simula la generación de documentos (PDFs, Docs). Es un *placeholder* para módulos futuros (YouTube, Correo, Presentaciones). | FastAPI, Docker |
+| **`docker-compose`** | Define el entorno completo, permitiendo que el proyecto se levante con un solo comando. | Docker |
 
-**Nota:** Asegúrate de usar siempre el entorno virtual `.venv` para evitar conflictos con dependencias globales.
+## 🧪 Pruebas y Calidad del Código
 
-## Inicialización de la base de datos
+La estabilidad se garantiza mediante una sólida suite de pruebas.
 
-En producción, la función `initialize_database()` se llama sin argumentos y crea el archivo `operations.db` en disco.
+* **Pruebas de Integración:** Se utiliza `pytest-httpx` para simular (mockear) las respuestas de los microservicios, verificando que el `agent-runner` interactúe correctamente con los servicios externos sin depender de la red real.
+* **Soporte Asíncrono:** La suite utiliza `pytest-asyncio` para probar la lógica asíncrona de manera segura y determinista.
 
-En los tests, se pasa una conexión SQLite en memoria a `initialize_database()` para evitar bloqueos y errores de concurrencia.
+---
 
-# Database Behavior
+## 🛠️ Instalación y Uso (Local)
 
-## Production
-In production, the `initialize_database` function creates a connection to the SQLite database on disk (`operations.db`) and ensures the `operations` table exists. The connection is created and closed within the function to ensure proper resource management.
+1.  **Clonar el repositorio:** `git clone https://github.com/PupiBott/pupibot-agent-framework.git`
+2.  **Entrar a la carpeta:** `cd pupibot-agent-framework`
+3.  **Levantar el entorno:** `docker compose up --build`
+4.  **Acceder al Cerebro (Agent Runner):** `http://localhost:8000/docs` (Documentación OpenAPI)
 
-## Testing
-During testing, an in-memory SQLite database is used. The `initialize_database` function is passed an open connection, which remains open for the entire test suite. This ensures test isolation and avoids interference with the production database. The connection is managed by pytest and is automatically closed at the end of the test suite.
+---
+
+## 🛣️ Próximos Pasos (Roadmap)
+
+1. **Interfaz de Usuario (UI):** Conexión de una interfaz *frontend* para la interacción humana.
+2. **Nuevos Módulos:** Implementar los servicios de creación de **Podcast Interactivo** y **Presentaciones Dinámicas** para *onboarding* corporativo.
+3. **Persistencia:** Conexión a una base de datos para almacenar el historial de operaciones (`op_id`).
