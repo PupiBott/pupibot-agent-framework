@@ -10,10 +10,14 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
         with:
           python-version: '3.12'
 
@@ -22,18 +26,16 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
 
-      - name: Export PYTHONPATH
-        run: echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
-
-      - name: Debug env
+      - name: Debug env before tests
         run: |
+          echo "PYTHONPATH=$PYTHONPATH"
           python -V
           which python
-          python -m pip show requests || true
-          python -m pip show fastapi || true
-          python -m pip show respx || true
-          python -m pip show pytest_httpx || true
-          python -m pip list | head -20
+          python -m pip show pytest || true
+          python - <<'PY'
+import sys
+print("sys.path[0:6] =", sys.path[:6])
+PY
 
       - name: Run tests
         run: python -m pytest -q services
