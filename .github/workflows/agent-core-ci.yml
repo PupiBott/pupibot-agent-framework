@@ -32,10 +32,7 @@ jobs:
           python -V
           which python
           python -m pip show pytest || true
-          python - <<'PY'
-import sys
-print("sys.path[0:6] =", sys.path[:6])
-PY
+          python -c "import sys; print('sys.path[0:6]=', sys.path[:6])"
 
       - name: Run tests
         run: python -m pytest -q services
