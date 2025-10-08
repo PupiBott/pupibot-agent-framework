@@ -1,10 +1,13 @@
 # Dependencias del core del agente
 -r services/agent-core/requirements.txt
 
-# Dependencias del runner (backend FastAPI)
+# Dependencias del runner
 fastapi
 uvicorn
 httpx
 
-# Testing
+# Testing y mocking
 pytest
+pytest-asyncio
+pytest_httpx
+respx

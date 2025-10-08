@@ -8,7 +8,7 @@ on:
       - '.github/workflows/agent-core-ci.yml'
 
 jobs:
-  validate-agent-core:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +31,8 @@ jobs:
           which python
           python -m pip show requests || true
           python -m pip show fastapi || true
+          python -m pip show respx || true
+          python -m pip show pytest_httpx || true
           python -m pip list | head -20
 
       - name: Run tests
