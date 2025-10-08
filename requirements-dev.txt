@@ -1,5 +1,5 @@
 # Dependencias del core del agente
--r services/agent-core/requirements.txt
+-r services/agent_core/requirements.txt
 
 # Dependencias del runner
 fastapi
