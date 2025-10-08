@@ -1,0 +1,408 @@
+openapi: 3.0.3
+info:
+  title: Local Agent API
+  description: API para el Agente Local que orquesta Documentos, Imágenes y otras tareas.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8080
+    description: Servidor del Agent Runner local
+paths:
+  /v1/agent/execute:
+    post:
+      summary: Ejecutar una acción orquestada por el LLM
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentExecuteRequest'
+      responses:
+        "202":
+          description: Operación aceptada y encolada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        "400":
+          description: Petición inválida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/agent/operations/{operation_id}:
+    get:
+      summary: Consultar estado y logs de una operación
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: operation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Estado actual de la operación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationStatus'
+        "404":
+          description: Operación no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/documents/create:
+    post:
+      summary: Crear documento (docx|pdf|txt|rtf)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentRequest'
+      responses:
+        "202":
+          description: Operación aceptada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        "400":
+          description: Petición inválida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/images/generate:
+    post:
+      summary: Generar imagen (local o proveedor cloud)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageGenerateRequest'
+      responses:
+        "201":
+          description: Imagen en cola/creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageGenerateResponse'
+        "429":
+          description: Límite de cuotas o límite de presupuesto alcanzado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/images/{image_id}:
+    get:
+      summary: Obtener metadata o descargar imagen por id
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Metadata o binario de imagen (según Accept)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageGenerateResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    OperationResponse:
+      type: object
+      properties:
+        request_id:
+          type: string
+        operation_id:
+          type: string
+        status:
+          type: string
+    OperationStatus:
+      type: object
+      properties:
+        operation_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, success, failed, awaiting_confirmation]
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+        result:
+          type: object
+          additionalProperties: true
+        logs:
+          type: array
+          items:
+            type: string
+    AgentExecuteRequest:
+      type: object
+      required:
+        - action
+        - payload
+        - llm_signature
+        - idempotency_key
+      properties:
+        action:
+          type: string
+          enum: [create_document, generate_image, create_calendar_event, create_note, create_alarm]
+        payload:
+          type: object
+          additionalProperties: true
+          description: Payload específico según action. Debe corresponder a los schemas de CreateDocumentRequest, ImageGenerateRequest, etc.
+        llm_signature:
+          type: string
+          description: Firma o token proporcionado por el orquestador LLM (HMAC/JWT)
+        policy_profile:
+          type: string
+          description: Perfil de políticas a aplicar (ej: strict, permissive)
+        user_id:
+          type: string
+        idempotency_key:
+          type: string
+    CreateDocumentRequest:
+      type: object
+      required:
+        - type
+        - title
+        - blocks
+        - output_path
+        - idempotency_key
+      properties:
+        type:
+          type: string
+          enum: [docx, pdf, txt, rtf]
+        title:
+          type: string
+        author:
+          type: string
+        blocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocBlock'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/InlineImageRef'
+        metadata:
+          type: object
+          additionalProperties: true
+        output_path:
+          type: string
+          description: Ruta absoluta en el host de destino; Agent Runner validará sandboxing
+        idempotency_key:
+          type: string
+        required_confirm:
+          type: boolean
+          description: Si true, el Runner pedirá confirmación del usuario antes de sobrescribir
+        llm_prompt_hash:
+          type: string
+          description: Hash del prompt original usado por el LLM
+        preferred_docx_method:
+          type: string
+          description: Método preferido para renderizar DOCX (ej: docxtemplater, python-docx)
+    DocBlock:
+      type: object
+      required:
+        - type
+        - content
+      properties:
+        type:
+          type: string
+          enum: [heading, para, list, table, figure]
+        content:
+          type: string
+        style:
+          type: object
+          additionalProperties: true
+        list_items:
+          type: array
+          items:
+            type: string
+        table:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+    InlineImageRef:
+      type: object
+      required:
+        - name
+        - source
+      properties:
+        name:
+          type: string
+        source:
+          type: string
+          description: "generate:image | image_id:<id> | local:/absolute/path"
+        width:
+          type: integer
+        height:
+          type: integer
+        alt:
+          type: string
+    ImageGenerateRequest:
+      type: object
+      required:
+        - prompt
+        - format
+        - idempotency_key
+      properties:
+        prompt:
+          type: string
+        style:
+          type: string
+        seed:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        provider:
+          type: string
+          enum: [local, google]
+        provider_opts:
+          type: object
+          additionalProperties: true
+          description: Opciones específicas para el proveedor (ej: credentials_ref, budget_limit)
+        format:
+          type: string
+          enum: [png, jpg, webp]
+        idempotency_key:
+          type: string
+    ImageGenerateResponse:
+      type: object
+      properties:
+        image_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, success, failed]
+        path:
+          type: string
+        base64:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        provider:
+          type: string
+    CreateCalendarEventRequest:
+      type: object
+      required:
+        - title
+        - start
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+        reminders:
+          type: array
+          items:
+            type: object
+            properties:
+              method:
+                type: string
+                enum: [push, email, local]
+              minutes_before:
+                type: integer
+        metadata:
+          type: object
+          additionalProperties: true
+        idempotency_key:
+          type: string
+    CreateNoteRequest:
+      type: object
+      required:
+        - title
+        - body
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        idempotency_key:
+          type: string
+    CreateAlarmRequest:
+      type: object
+      required:
+        - when
+      properties:
+        when:
+          type: string
+          format: date-time
+        repeat:
+          type: string
+          enum: [none, daily, weekly, monthly]
+        message:
+          type: string
+        action:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [open_url, call_api, run_command]
+            target:
+              type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        idempotency_key:
+          type: string

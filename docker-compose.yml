@@ -1,0 +1,42 @@
+services:
+  agent-runner:
+    build: ./services/agent-runner
+    container_name: agent-runner
+    ports:
+      - "8080:8080"
+    networks:
+      - assistant-net
+    volumes:
+      - ./data/agent-runner:/app
+
+  document-service:
+    build: ./services/document-service
+    container_name: document-service
+    ports:
+      - "8081:8081"
+    networks:
+      - assistant-net
+
+  image-generator:
+    build: ./services/image-generator
+    container_name: image-generator
+    ports:
+      - "8082:8082"
+    networks:
+      - assistant-net
+
+  ui:
+    build: ./web/ui
+    container_name: ui
+    ports:
+      - "3000:80"
+    depends_on:
+      - agent-runner
+      - document-service
+      - image-generator
+    networks:
+      - assistant-net
+
+networks:
+  assistant-net:
+    driver: bridge
