@@ -25,7 +25,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         # Instalar dependencias del Agent Runner
-        pip install -r services/agent-runner/requirements.txt
+        pip install -r requirements-dev.txt
         # Instalar dependencias de desarrollo para pruebas (pytest, httpx, asyncio)
         pip install pytest pytest-asyncio pytest-httpx
 
