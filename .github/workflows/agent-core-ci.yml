@@ -11,46 +11,26 @@ jobs:
   validate-agent-core:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.12'
 
-      - name: Ensure pip cache dir
-        run: mkdir -p ${{ runner.temp }}/pip-cache
-
-      - name: Install agent-core python deps
+      - name: Install dev dependencies
         run: |
-          python -V
-          which python
           python -m pip install --upgrade pip
-          python -m pip install --no-cache-dir -r services/agent-core/requirements.txt
-        env:
-          PIP_CACHE_DIR: ${{ runner.temp }}/pip-cache
+          python -m pip install -r requirements-dev.txt
 
-      - name: Export PYTHONPATH to repo root
+      - name: Export PYTHONPATH
         run: echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
 
-      - name: Debug env before tests
+      - name: Debug env
         run: |
-          echo "=== python info ==="
           python -V
           which python
-          echo "=== pip show requests ==="
-          python -m pip show requests || true
-          echo "=== pip list (top 50) ==="
-          python -m pip list --format=columns | sed -n '1,50p'
-          echo "=== sys.path first entries ==="
-          python - <<'PY'
-import sys
-print(sys.path[:8])
-PY
+          python -m pip show requests
+          python -m pip list | head -20
 
-      - name: Validate OpenAPI (non-blocking)
-        run: npx -y @apidevtools/swagger-cli validate services/agent-runner/openapi/openapi.json || echo "OpenAPI validation warning"
-
-      - name: Run unit tests for agent-core
-        run: pytest -q services/agent-core/tests
+      - name: Run tests
+        run: python -m pytest -q services/agent-core/tests
