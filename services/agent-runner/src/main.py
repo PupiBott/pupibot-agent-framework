@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 import sqlite3
 import logging
@@ -27,7 +27,15 @@ async def lifespan(app: FastAPI):
         app.state.db_conn.close()
 
 # Initialize FastAPI app
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="PupiBot Agent Runner API",
+    version="1.0.0",
+    description="API para gestión y ejecución de operaciones por agentes",
+    openapi_url="/openapi.json",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan
+)
 
 # Configure CORS
 app.add_middleware(
@@ -110,6 +118,13 @@ class OperationIn(BaseModel):
     payload: str
     idempotency_key: Optional[str] = None
 
+class Operation(BaseModel):
+    id: int = Field(..., description="ID único de la operación")
+    action: str = Field(..., description="Tipo de acción que ejecuta la operación")
+    payload: Optional[str] = Field(None, description="Datos asociados a la operación")
+    status: Optional[str] = Field(None, description="Estado actual de la operación")
+    result: Optional[dict] = Field(None, description="Resultado de la operación")
+
 # Endpoints
 @app.post("/v1/agent/execute", response_model=OperationResponse)
 async def execute_action(request: ExecuteRequest):
@@ -150,7 +165,7 @@ async def get_operation_status(operation_id: int):
     logger.info({"event": "operation_status_retrieved", "operation_id": operation_id})
     return {"operation_id": operation["id"], "status": operation["status"]}
 
-@app.post("/operations")
+@app.post("/operations", response_model=Operation, status_code=200, summary="Create a new operation", description="Creates a new operation with the provided action and payload.")
 def create_operation(op: OperationIn):
     try:
         idempotency_key = str(op.idempotency_key) if op.idempotency_key else str(uuid.uuid4())
@@ -162,12 +177,12 @@ def create_operation(op: OperationIn):
         )
         new_id = cursor.lastrowid
         conn.commit()
-        return {"id": new_id, "status": "pending"}
+        return Operation(id=new_id, action=op.action, payload=op.payload, status="pending")
     except Exception as e:
         logger.error("DB insert error", extra={"exception": traceback.format_exc()})
         raise HTTPException(status_code=500, detail=f"DB insert failed: {str(e)}")
 
-@app.post("/operations/{operation_id}/run")
+@app.post("/operations/{operation_id}/run", response_model=Operation, summary="Run an operation", description="Executes the specified operation and updates its status.")
 async def run_operation(operation_id: int):
     try:
         logger.debug("Starting run_operation", extra={"operation_id": operation_id})
@@ -226,8 +241,7 @@ async def run_operation(operation_id: int):
                 raise
             except Exception:
                 logger.error("Unexpected error during HTTP request", extra={
-                    "traceback": traceback.format_exc()
-                })
+                    "traceback": traceback.format_exc()})
                 raise
 
         cursor.execute(
@@ -236,7 +250,7 @@ async def run_operation(operation_id: int):
         )
         conn.commit()
 
-        return {"id": operation_id, "status": "done", "result": result}
+        return Operation(id=operation_id, action=action, payload=payload_text, status="done", result=result)
 
     except Exception as e:
         logger.error("Error in run_operation", extra={"exception": traceback.format_exc()})
