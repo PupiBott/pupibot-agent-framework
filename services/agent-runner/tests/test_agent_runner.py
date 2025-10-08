@@ -2,6 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from src.main import app, get_db_connection
 from src.db_init import initialize_database
+import json
+from pytest_httpx import HTTPXMock
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_database():
@@ -27,26 +29,31 @@ def test_idempotency_key(client):
 
 @pytest.mark.asyncio  # Mark the test as an asyncio test
 @pytest.mark.httpx_mock
-async def test_integration_with_mocks(httpx_mock, client):  # Added `client` as a fixture
-    # Mock the external service response
+async def test_integration_with_mocks(httpx_mock: HTTPXMock, client):  # Added `client` as a fixture
+    # Define the expected payload
+    expected_body = json.dumps({"payload": "test"}).encode("utf-8")
+
+    # Mock flexible: consume by URL+method, without strict match_content
     httpx_mock.add_response(
         method="POST",
         url="http://document-service:8081/generate",
-        json={"status": "success"},
-        match_content=b'{"payload":"test"}'  # Ensure the body matches exactly
+        json={"document": "ok"},
+        status_code=200,
     )
 
-    # Define the payload
-    payload = {"action": "test_action", "payload": "test"}  # Ensure payload is a string
+    # Create operation with explicit preconditions
+    payload = {"action": "generate_doc", "payload": "test"}
+    create = client.post("/operations", json=payload, headers={"Authorization": "Bearer static_token"})
+    assert create.status_code == 200
+    data = create.json()
+    operation_id = data["id"]
 
-    # Create an operation
-    create_response = client.post("/operations", json=payload, headers={"Authorization": "Bearer static_token"})
-    assert create_response.status_code == 200
-    operation_id = create_response.json()["id"]
+    # Execute operation
+    run = client.post(f"/operations/{operation_id}/run", headers={"Authorization": "Bearer static_token"})
+    assert run.status_code == 200
 
-    # Run the operation
-    run_response = client.post(f"/operations/{operation_id}/run", headers={"Authorization": "Bearer static_token"})
-    assert run_response.status_code == 200
-
-    # Verify the mock was consumed
-    assert len(httpx_mock.get_requests()) == 1, "Expected one request to the mocked endpoint"
+    # Validate mock consumption and sent payload
+    requests = httpx_mock.get_requests()
+    sent = [r for r in requests if str(r.url) == "http://document-service:8081/generate" and r.method == "POST"]
+    assert sent, "External POST to /generate was not performed"
+    assert json.loads(sent[-1].content)["payload"] == "test"

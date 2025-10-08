@@ -57,6 +57,10 @@ def get_db_connection():
     conn = sqlite3.connect("operations.db", check_same_thread=False, timeout=30)
     conn.row_factory = sqlite3.Row  # Set row factory for dictionary-like access
     app.state.db_conn = conn
+
+    logger.debug("Attempting to establish database connection")
+    logger.debug("Database connection established successfully", extra={"db_conn": repr(conn)})
+
     return conn
 
 # Middleware for Bearer Token Validation
@@ -166,6 +170,7 @@ def create_operation(op: OperationIn):
 @app.post("/operations/{operation_id}/run")
 async def run_operation(operation_id: int):
     try:
+        logger.debug("Starting run_operation", extra={"operation_id": operation_id})
         conn = get_db_connection()
         logger.debug("run_operation: acquired connection", extra={"db_conn": repr(conn)})
         cursor = conn.cursor()
@@ -175,6 +180,11 @@ async def run_operation(operation_id: int):
 
         if not operation:
             raise HTTPException(status_code=404, detail="Operation not found")
+
+        logger.debug("Fetched operation details", extra={
+            "operation_id": operation_id,
+            "operation": operation
+        })
 
         action = operation["action"] if isinstance(operation, sqlite3.Row) else operation[1]
         payload_text = operation["payload"] if isinstance(operation, sqlite3.Row) else (operation[2] if operation else None)
@@ -189,15 +199,36 @@ async def run_operation(operation_id: int):
         else:
             body_to_send = {"payload": payload_obj}
 
-        # deterministic serialization for logging
-        body_bytes = json.dumps(body_to_send, separators=(",", ":"), ensure_ascii=False).encode()
-        logger.debug("external-call body_bytes=%r", body_bytes)
-
         url = "http://document-service:8081/generate"
+        headers = {"Content-Type": "application/json"}
+
+        # Construct the payload
+        payload = {"payload": payload_obj}
+
+        # Add structured debug log just before the call
+        logger.debug("Outgoing request", extra={
+            "url": url,
+            "method": "POST",
+            "headers": headers,
+            "body": json.dumps(payload, sort_keys=True)
+        })
+
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=body_to_send, timeout=10.0)
-            response.raise_for_status()
-            result = response.json()
+            try:
+                response = await client.post(url, json=payload, headers=headers, timeout=10.0)
+                response.raise_for_status()
+                result = response.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("HTTPStatusError", extra={
+                    "status_code": e.response.status_code,
+                    "response_body": e.response.text
+                })
+                raise
+            except Exception:
+                logger.error("Unexpected error during HTTP request", extra={
+                    "traceback": traceback.format_exc()
+                })
+                raise
 
         cursor.execute(
             "UPDATE operations SET status = 'done' WHERE id = ?",
