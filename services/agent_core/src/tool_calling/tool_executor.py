@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Dict
-from tool_calling.tool_router import ToolRouter
+from .tool_router import ToolRouter
 
 @dataclass
 class ToolCallRequest:
