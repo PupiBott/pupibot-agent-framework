@@ -3,8 +3,8 @@ name: agent-core-ci
 on:
   pull_request:
     paths:
-      - 'services/agent-core/**'
-      - 'services/agent-runner/**'
+      - 'services/**'
+      - 'requirements-dev.txt'
       - '.github/workflows/agent-core-ci.yml'
 
 jobs:
@@ -29,8 +29,9 @@ jobs:
         run: |
           python -V
           which python
-          python -m pip show requests
+          python -m pip show requests || true
+          python -m pip show fastapi || true
           python -m pip list | head -20
 
       - name: Run tests
-        run: python -m pytest -q services/agent-core/tests
+        run: python -m pytest -q services
