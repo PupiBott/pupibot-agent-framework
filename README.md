@@ -39,3 +39,4 @@ La estabilidad se garantiza mediante una sólida suite de pruebas.
 1. **Interfaz de Usuario (UI):** Conexión de una interfaz *frontend* para la interacción humana.
 2. **Nuevos Módulos:** Implementar los servicios de creación de **Podcast Interactivo** y **Presentaciones Dinámicas** para *onboarding* corporativo.
 3. **Persistencia:** Conexión a una base de datos para almacenar el historial de operaciones (`op_id`).
+# Trigger update
