@@ -1,26 +1,18 @@
-from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 from .tool_router import ToolRouter
-
-@dataclass
-class ToolCallRequest:
-    name: str
-    args: Dict[str, Any]
-
-@dataclass
-class ToolCallResult:
-    name: str
-    ok: bool
-    output: Any = None
-    error: str | None = None
+from .models import ToolCallRequest, ToolCallResult
 
 class ToolExecutor:
-    def __init__(self, router: ToolRouter | None = None):
-        self.router = router or ToolRouter()
+    def __init__(self, router: ToolRouter):
+        self.router = router
 
     def execute(self, req: ToolCallRequest) -> ToolCallResult:
+        fn = self.router.get(req.name)
+        if not fn:
+            return ToolCallResult(ok=False, error=f"tool not found: {req.name}")
         try:
-            output = self.router.route(req.name, **(req.args or {}))
-            return ToolCallResult(name=req.name, ok=True, output=output)
+            # call with args dict expanded if callable supports kwargs
+            result = fn(**req.args) if isinstance(req.args, dict) else fn(req.args)
+            return ToolCallResult(ok=True, output=result)
         except Exception as e:
-            return ToolCallResult(name=req.name, ok=False, error=str(e))
+            return ToolCallResult(ok=False, error=str(e))

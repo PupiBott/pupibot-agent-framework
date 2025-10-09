@@ -1,18 +1,25 @@
-from typing import Dict, Callable, Any
+from typing import Callable, Dict, Any, List
 
 class ToolRouter:
-    def __init__(self, registry: Dict[str, Callable[..., Any]] | None = None):
-        self.registry = registry or {}
+    def __init__(self):
+        self._registry: Dict[str, Callable[..., Any]] = {}
 
-    def register(self, name: str, fn: Callable[..., Any]) -> None:
-        if not callable(fn):
-            raise TypeError("Tool must be callable")
-        self.registry[name] = fn
+    def register(self, name: str, fn: Callable[..., Any]):
+        self._registry[name] = fn
 
-    def available(self) -> list[str]:
-        return sorted(self.registry.keys())
+    def get(self, name: str):
+        return self._registry.get(name)
 
-    def route(self, name: str, **kwargs) -> Any:
-        if name not in self.registry:
-            raise KeyError(f"Tool '{name}' not registered")
-        return self.registry[name](**kwargs)
+    def available(self) -> List[str]:
+        """Return list of registered tool names."""
+        return list(self._registry.keys())
+
+    def route(self, name: str, /, *args, **kwargs) -> Any:
+        """
+        Execute the registered tool with given args/kwargs.
+        Raise KeyError if tool not found.
+        """
+        fn = self.get(name)
+        if fn is None:
+            raise KeyError(f"tool not found: {name}")
+        return fn(*args, **kwargs)
