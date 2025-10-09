@@ -1,0 +1,29 @@
+name: cleanup-artifacts
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: List artifacts and delete older than 30 days
+        env:
+          REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cutoff=$(date -d "30 days ago" --utc +"%Y-%m-%dT%H:%M:%SZ")
+          gh api -H "Accept: application/vnd.github+json" -X GET "/repos/$REPO/actions/artifacts?per_page=100" \
+            | jq -r '.artifacts[] | "\(.id)\t\(.name)\t\(.created_at)"' \
+            | while IFS=$'\t' read -r id name created; do
+                if [[ "$created" < "$cutoff" ]]; then
+                  echo "Deleting artifact $id ($name) created at $created"
+                  gh api -X DELETE "/repos/$REPO/actions/artifacts/$id"
+                else
+                  echo "Keeping artifact $id ($name) created at $created"
+                fi
+              done
