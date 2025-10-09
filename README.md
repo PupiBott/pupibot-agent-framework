@@ -40,3 +40,4 @@ La estabilidad se garantiza mediante una sólida suite de pruebas.
 2. **Nuevos Módulos:** Implementar los servicios de creación de **Podcast Interactivo** y **Presentaciones Dinámicas** para *onboarding* corporativo.
 3. **Persistencia:** Conexión a una base de datos para almacenar el historial de operaciones (`op_id`).
 # Trigger update
+# Another trigger update
