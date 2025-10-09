@@ -48,7 +48,7 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - name: Generate current OpenAPI spec
         run: |
-          python - <<PY
+          python - <<'PY'
 from services.agent_runner.src.main import app
 import json, pathlib
 current_spec = app.openapi()
