@@ -1,6 +1,7 @@
-from flask import Flask, request, jsonify
 import os
 import uuid
+
+from flask import Flask, jsonify, request
 from providers.google_provider import generate as google_generate
 
 app = Flask(__name__)
@@ -10,11 +11,13 @@ BASE_DIR = os.path.abspath("./data/images")
 if not os.path.exists(BASE_DIR):
     os.makedirs(BASE_DIR)
 
+
 # Function to validate and sanitize provider
 def validate_provider(provider):
     if provider not in ["local", "google"]:
         raise ValueError("Invalid provider. Must be 'local' or 'google'.")
     return provider
+
 
 # Endpoint to generate images
 @app.route("/internal/images/generate", methods=["POST"])
@@ -45,6 +48,7 @@ def generate_image():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

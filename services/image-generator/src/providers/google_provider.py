@@ -1,15 +1,19 @@
-import os
 import json
+import os
 import uuid
-import requests
+
 import keyring
+import requests
+
 
 def generate(prompt):
     # Load credentials from keyring
     service_name = "my-ai-assistant/google-creds"
     credentials_json = keyring.get_password(service_name, "google_credentials")
     if not credentials_json:
-        raise ValueError("Google credentials not found in keyring. Please set them up using the setup script.")
+        raise ValueError(
+            "Google credentials not found in keyring. Please set them up using the setup script."
+        )
 
     credentials = json.loads(credentials_json)
     api_key = credentials.get("api_key")
@@ -19,10 +23,7 @@ def generate(prompt):
     # Define API endpoint and parameters
     api_url = "https://vertex-ai.googleapis.com/v1/images:generate"
     headers = {"Authorization": f"Bearer {api_key}"}
-    payload = {
-        "prompt": prompt,
-        "max_budget": 10  # Example budget limit
-    }
+    payload = {"prompt": prompt, "max_budget": 10}  # Example budget limit
 
     # Call the API
     response = requests.post(api_url, headers=headers, json=payload)

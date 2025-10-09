@@ -1,5 +1,7 @@
+import json
+import pathlib
+
 from services.agent_runner.src.main import app
-import json, pathlib
 
 current_spec = app.openapi()
 pathlib.Path("openapi.current.json").write_text(

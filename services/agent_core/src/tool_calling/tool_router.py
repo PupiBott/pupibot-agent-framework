@@ -1,4 +1,5 @@
-from typing import Callable, Dict, Any, List
+from typing import Any, Callable, Dict, List
+
 
 class ToolRouter:
     def __init__(self):

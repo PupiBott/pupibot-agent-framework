@@ -1,5 +1,6 @@
 from src.main import app
 
+
 def test_openapi_contains_operations():
     spec = app.openapi()
     paths = spec.get("paths", {})

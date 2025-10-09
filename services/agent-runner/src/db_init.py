@@ -1,10 +1,15 @@
 import sqlite3
 
+
 def initialize_database(connection=None):
     created_here = connection is None
     if created_here:
-        connection = sqlite3.connect("operations.db", check_same_thread=False, timeout=30)
-        connection.row_factory = sqlite3.Row  # Set row factory for dictionary-like access
+        connection = sqlite3.connect(
+            "operations.db", check_same_thread=False, timeout=30
+        )
+        connection.row_factory = (
+            sqlite3.Row
+        )  # Set row factory for dictionary-like access
 
     cursor = connection.cursor()
     cursor.execute(
@@ -23,6 +28,7 @@ def initialize_database(connection=None):
 
     if created_here:
         connection.close()
+
 
 if __name__ == "__main__":
     initialize_database()

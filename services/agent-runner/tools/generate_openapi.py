@@ -6,7 +6,9 @@ from pathlib import Path
 
 # Garantiza que el paquete src sea importable desde este script
 ROOT = Path(__file__).resolve().parents[2]  # apunta a /services
-sys.path.insert(0, str(ROOT / "agent-runner"))  # inserta services/agent-runner en sys.path
+sys.path.insert(
+    0, str(ROOT / "agent-runner")
+)  # inserta services/agent-runner en sys.path
 
 try:
     # importa la app FastAPI desde src.main (confirma que main.py define `app`)
@@ -22,6 +24,7 @@ except Exception:
 OUT_DIR = ROOT / "agent-runner" / "openapi"
 OUT_PATH = OUT_DIR / "openapi.json"
 
+
 def main():
     try:
         OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -34,6 +37,7 @@ def main():
         print("Failed to generate OpenAPI JSON", file=sys.stderr)
         print(traceback.format_exc(), file=sys.stderr)
         return 2
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
