@@ -1,6 +1,7 @@
 name: agent-core-ci
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'services/**'
