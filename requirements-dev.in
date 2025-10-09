@@ -1,0 +1,23 @@
+# Development and testing dependencies
+-r requirements.in
+
+# Agent runner dependencies
+fastapi
+uvicorn
+httpx
+
+# Testing and mocking
+pytest
+pytest-asyncio
+pytest_httpx
+respx
+
+# Code quality tools
+black
+isort
+flake8
+yamllint
+
+# Build and package management
+pip-tools
+tox
