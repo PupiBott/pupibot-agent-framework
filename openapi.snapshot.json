@@ -1,22 +1,36 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Agent Runner",
-    "version": "0.1.0"
+    "title": "PupiBot Agent Runner API",
+    "description": "API para gestión y ejecución de operaciones por agentes",
+    "version": "1.0.0"
   },
   "paths": {
-    "/tools/execute": {
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agent/execute": {
       "post": {
-        "tags": [
-          "tools"
-        ],
-        "summary": "Execute Tool",
-        "operationId": "execute_tool_tools_execute_post",
+        "summary": "Execute Action",
+        "operationId": "execute_action_v1_agent_execute_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ToolCallRequest"
+                "$ref": "#/components/schemas/ExecuteRequest"
               }
             }
           },
@@ -28,7 +42,125 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ToolCallResult"
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agent/operations/{operation_id}": {
+      "get": {
+        "summary": "Get Operation Status",
+        "operationId": "get_operation_status_v1_agent_operations__operation_id__get",
+        "parameters": [
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Operation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations": {
+      "post": {
+        "summary": "Create a new operation",
+        "description": "Creates a new operation with the provided action and payload.",
+        "operationId": "create_operation_operations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/{operation_id}/run": {
+      "post": {
+        "summary": "Run an operation",
+        "description": "Executes the specified operation and updates its status.",
+        "operationId": "run_operation_operations__operation_id__run_post",
+        "parameters": [
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Operation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationStatus"
                 }
               }
             }
@@ -49,6 +181,30 @@
   },
   "components": {
     "schemas": {
+      "ExecuteRequest": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "title": "Idempotency Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "payload",
+          "idempotency_key"
+        ],
+        "title": "ExecuteRequest"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -62,42 +218,17 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "ToolCallRequest": {
+      "OperationIn": {
         "properties": {
-          "name": {
+          "action": {
             "type": "string",
-            "title": "Name",
-            "description": "Tool name"
+            "title": "Action"
           },
-          "args": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Args",
-            "description": "Tool arguments"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "ToolCallRequest"
-      },
-      "ToolCallResult": {
-        "properties": {
-          "ok": {
-            "type": "boolean",
-            "title": "Ok"
+          "payload": {
+            "type": "string",
+            "title": "Payload"
           },
-          "output": {
-            "anyOf": [
-              {},
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Output"
-          },
-          "error": {
+          "idempotency_key": {
             "anyOf": [
               {
                 "type": "string"
@@ -106,14 +237,46 @@
                 "type": "null"
               }
             ],
-            "title": "Error"
+            "title": "Idempotency Key"
           }
         },
         "type": "object",
         "required": [
-          "ok"
+          "action",
+          "payload"
         ],
-        "title": "ToolCallResult"
+        "title": "OperationIn"
+      },
+      "OperationResponse": {
+        "properties": {
+          "operation_id": {
+            "type": "integer",
+            "title": "Operation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "operation_id"
+        ],
+        "title": "OperationResponse"
+      },
+      "OperationStatus": {
+        "properties": {
+          "operation_id": {
+            "type": "integer",
+            "title": "Operation Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "operation_id",
+          "status"
+        ],
+        "title": "OperationStatus"
       },
       "ValidationError": {
         "properties": {
