@@ -1,5 +1,7 @@
-import keyring
 import json
+
+import keyring
+
 
 def setup_google_credentials():
     service_name = "my-ai-assistant/google-creds"
@@ -21,6 +23,7 @@ def setup_google_credentials():
         keyring.set_password(service_name, credential_key, credentials_json)
     except Exception as e:
         return
+
 
 if __name__ == "__main__":
     setup_google_credentials()
