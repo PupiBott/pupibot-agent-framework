@@ -59,4 +59,4 @@ jobs:
         run: diff services/agent-runner/openapi/openapi.snapshot.json openapi.current.json
       - if: success()
         run: echo "✅ OpenAPI contract matches snapshot."
-# Trigger update
+# Trigger update - forced change
