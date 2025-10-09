@@ -1,0 +1,3 @@
+# Core dependencies for agent framework
+google-genai
+requests
